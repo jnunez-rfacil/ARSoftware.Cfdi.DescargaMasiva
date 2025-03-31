@@ -19,12 +19,12 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Helpers
 
         public static string ToSoapStartDateString(this DateTime date)
         {
-            return date.ToString("yyyy-MM-dd") + "T00:00:00";
+            return date.ToString("yyyy-MM-dd'T'HH:mm:ss");
         }
 
         public static string ToSoapEndDateString(this DateTime date)
         {
-            return date.ToString("yyyy-MM-dd") + "T23:59:59";
+            return date.ToString("yyyy-MM-dd'T'HH:mm:ss");
         }
 
         public static string CreateHttpAuthorizationHeaderFromToken(string token)
