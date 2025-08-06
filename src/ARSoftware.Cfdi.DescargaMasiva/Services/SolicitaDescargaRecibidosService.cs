@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using System;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -10,16 +11,16 @@ using ARSoftware.Cfdi.DescargaMasiva.Models;
 
 namespace ARSoftware.Cfdi.DescargaMasiva.Services
 {
-    public sealed class SolicitudService : ISolicitudService
+    public sealed class SolicitaDescargaRecibidosService : ISolicitaDescargaRecibidosService
     {
         private readonly IHttpSoapClient _httpSoapClient;
 
-        public SolicitudService(IHttpSoapClient httpSoapClient)
+        public SolicitaDescargaRecibidosService(IHttpSoapClient httpSoapClient)
         {
             _httpSoapClient = httpSoapClient;
         }
 
-        public string GenerateSoapRequestEnvelopeXmlContent(SolicitudRequest solicitudRequest, X509Certificate2 certificate)
+        public string GenerateSoapRequestEnvelopeXmlContent(SolicitaDescargaRecibidosRequest solicitud, X509Certificate2 certificate)
         {
             var xmlDocument = new XmlDocument();
 
@@ -42,7 +43,7 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Services
             envelopElement.AppendChild(bodyElement);
 
             XmlElement solicitaDescargaElement = xmlDocument.CreateElement(CfdiDescargaMasivaNamespaces.DesPrefix,
-                "SolicitaDescarga",
+                "SolicitaDescargaRecibidos",
                 CfdiDescargaMasivaNamespaces.DesNamespaceUrl);
             bodyElement.AppendChild(solicitaDescargaElement);
 
@@ -50,55 +51,59 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Services
                 "solicitud",
                 CfdiDescargaMasivaNamespaces.DesNamespaceUrl);
 
-            if (!solicitudRequest.HasUuid)
-                solicitudElement.SetAttribute("FechaInicial", solicitudRequest.StartDate.ToSoapStartDateString());
+            // Los atributos deberan de ordenarse de la siguiente forma
+            // 1. Complemento
+            // 2. EstadoComprobante
+            // 3. FechaInicial
+            // 4. FechaFinal
+            // 5. RfcEmisor
+            // 6. RfcSolicitante
+            // 7. TipoComprobante
+            // 8. TipoSolicitud
+            // 9. RfcReceptor
+            // 10. RfcACuentaTerceros
 
-            if (!solicitudRequest.HasUuid)
-                solicitudElement.SetAttribute("FechaFinal", solicitudRequest.EndDate.ToSoapEndDateString());
+            // Parámetro opcional
+            if (solicitud.TieneComplemento)
+                solicitudElement.SetAttribute("Complemento", solicitud.Complemento);
 
-            if (!solicitudRequest.HasUuid)
-                solicitudElement.SetAttribute("RfcEmisor", solicitudRequest.SenderRfc);
+            // Parámetro opcional
+            if (solicitud.TieneEstadoComprobante)
+                solicitudElement.SetAttribute("EstadoComprobante", solicitud.EstadoComprobante.Name);
 
-            solicitudElement.SetAttribute("RfcSolicitante", solicitudRequest.RequestingRfc);
+            // Parámetro requerido
+            solicitudElement.SetAttribute("FechaInicial", solicitud.FechaInicial.ToSoapStartDateString());
 
-            solicitudElement.SetAttribute("TipoSolicitud", solicitudRequest.RequestType.Name);
+            // Parámetro requerido
+            solicitudElement.SetAttribute("FechaFinal", solicitud.FechaFinal.ToSoapEndDateString());
 
-            // Optional
-            if (solicitudRequest.HasThirdPartyRfc)
-                solicitudElement.SetAttribute("RfcACuentaTerceros", solicitudRequest.ThirdPartyRfc);
+            // Parámetro opcional
+            if(solicitud.TieneRfcEmisor)
+                solicitudElement.SetAttribute("RfcEmisor", solicitud.RfcEmisor);
 
-            // Optional
-            if (solicitudRequest.HasDocumentType)
-                solicitudElement.SetAttribute("TipoComprobante", solicitudRequest.DocumentType.Value);
-
-            // Optional
-            if (solicitudRequest.HasDocumentStatus)
-                solicitudElement.SetAttribute("EstadoComprobante", solicitudRequest.DocumentStatus.Value.ToString());
-
-            //Optional
-            if (solicitudRequest.HasComplement)
-                solicitudElement.SetAttribute("Complemento", solicitudRequest.Complement);
-
-            // Optional
-            if (solicitudRequest.HasUuid)
-                solicitudElement.SetAttribute("Folio", solicitudRequest.Uuid);
-
-            if (!solicitudRequest.HasUuid)
+            // Parámetro opcional
+            if (solicitud.TieneRfcSolicitante)
             {
-                XmlElement rfcReceptores = xmlDocument.CreateElement(CfdiDescargaMasivaNamespaces.DesPrefix,
-                    "RfcReceptores",
-                    CfdiDescargaMasivaNamespaces.DesNamespaceUrl);
-                foreach (string item in solicitudRequest.RecipientsRfcs)
-                {
-                    XmlElement rfcReceptorElement = xmlDocument.CreateElement(CfdiDescargaMasivaNamespaces.DesPrefix,
-                        "RfcReceptor",
-                        CfdiDescargaMasivaNamespaces.DesNamespaceUrl);
-                    rfcReceptorElement.InnerText = item;
-                    rfcReceptores.AppendChild(rfcReceptorElement);
-                }
+                if (solicitud.RfcSolicitante != solicitud.RfcReceptor) throw new ArgumentException($"Si se define el parámetro {nameof          (solicitud.RfcSolicitante)} este debe de ser igual al parámetro {nameof(solicitud.RfcReceptor)}");
 
-                solicitudElement.AppendChild(rfcReceptores);
+                solicitudElement.SetAttribute("RfcSolicitante", solicitud.RfcSolicitante);
             }
+
+            // Parámetro opcional
+            if (solicitud.TieneTipoComprobante)
+            {
+                solicitudElement.SetAttribute("TipoComprobante", solicitud.TipoComprobante.Name);
+            }
+
+            // Parámetro obligatorio
+            solicitudElement.SetAttribute("TipoSolicitud", solicitud.TipoSolicitud.Name);
+
+            // Parámetro obligatorio
+            solicitudElement.SetAttribute("RfcReceptor", solicitud.RfcReceptor);
+
+            // Parámetro opcional
+            if (solicitud.TieneRfcACuentaTerceros)
+                solicitudElement.SetAttribute("RfcACuentaTerceros", solicitud.RfcACuentaTerceros);
 
             XmlElement signatureElement = SignedXmlHelper.SignRequest(solicitudElement, certificate);
             solicitudElement.AppendChild(signatureElement);
@@ -111,47 +116,47 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Services
                                                                   AccessToken accessToken,
                                                                   CancellationToken cancellationToken = default)
         {
-            return await _httpSoapClient.SendRequestAsync(CfdiDescargaMasivaWebServiceUrls.SolicitudUrl,
-                CfdiDescargaMasivaWebServiceUrls.SolicitudSoapActionUrl,
+            return await _httpSoapClient.SendRequestAsync(CfdiDescargaMasivaWebServiceUrls.SolicitaDescargaUrl,
+                CfdiDescargaMasivaWebServiceUrls.SolicitaDescargaRecibidosSoapActionUrl,
                 accessToken,
                 soapRequestContent,
                 cancellationToken);
         }
 
-        public async Task<SolicitudResult> SendSoapRequestAsync(SolicitudRequest solicitudRequest,
+        public async Task<SolicitaDescargaRecibidosResult> SendSoapRequestAsync(SolicitaDescargaRecibidosRequest solicitaDescargaRecibidosRequest,
                                                                 X509Certificate2 certificate,
                                                                 CancellationToken cancellationToken = default)
         {
-            string soapRequestContent = GenerateSoapRequestEnvelopeXmlContent(solicitudRequest, certificate);
+            string soapRequestContent = GenerateSoapRequestEnvelopeXmlContent(solicitaDescargaRecibidosRequest, certificate);
 
-            SoapRequestResult soapRequestResult = await _httpSoapClient.SendRequestAsync(CfdiDescargaMasivaWebServiceUrls.SolicitudUrl,
-                CfdiDescargaMasivaWebServiceUrls.SolicitudSoapActionUrl,
-                solicitudRequest.AccessToken,
+            SoapRequestResult soapRequestResult = await _httpSoapClient.SendRequestAsync(CfdiDescargaMasivaWebServiceUrls.SolicitaDescargaUrl,
+                CfdiDescargaMasivaWebServiceUrls.SolicitaDescargaRecibidosSoapActionUrl,
+                solicitaDescargaRecibidosRequest.AccessToken,
                 soapRequestContent,
                 cancellationToken);
 
             return GetSoapResponseResult(soapRequestResult);
         }
 
-        public SolicitudResult GetSoapResponseResult(SoapRequestResult soapRequestResult)
+        public SolicitaDescargaRecibidosResult GetSoapResponseResult(SoapRequestResult soapRequestResult)
         {
             var xmlDocument = new XmlDocument();
             xmlDocument.LoadXml(soapRequestResult.ResponseContent);
 
-            XmlNode element = xmlDocument.GetElementsByTagName("SolicitaDescargaResult")[0];
+            XmlNode element = xmlDocument.GetElementsByTagName("SolicitaDescargaRecibidosResult")[0];
             if (element is null)
-                throw new InvalidResponseContentException("Element SolicitaDescargaResult is missing in response.",
+                throw new InvalidResponseContentException("Element SolicitaDescargaRecibidosResult is missing in response.",
                     soapRequestResult.ResponseContent);
 
             if (element.Attributes is null)
-                throw new InvalidResponseContentException("Attributes property of Element SolicitaDescargaResult is null.",
+                throw new InvalidResponseContentException("Attributes property of Element SolicitaDescargaRecibidosResult is null.",
                     soapRequestResult.ResponseContent);
 
             string requestId = element.Attributes.GetNamedItem("IdSolicitud")?.Value ?? string.Empty;
             string requestStatusCode = element.Attributes.GetNamedItem("CodEstatus")?.Value ?? string.Empty;
             string requestStatusMessage = element.Attributes.GetNamedItem("Mensaje")?.Value ?? string.Empty;
 
-            return SolicitudResult.CreateInstance(requestId,
+            return SolicitaDescargaRecibidosResult.CreateInstance(requestId,
                 requestStatusCode,
                 requestStatusMessage,
                 soapRequestResult.HttpStatusCode,

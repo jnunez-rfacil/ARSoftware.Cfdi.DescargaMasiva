@@ -10,7 +10,7 @@ namespace ARSoftware.Cfdi.DescargaMasiva
         {
             serviceCollection.AddHttpClient<IHttpSoapClient, HttpSoapClient>();
             serviceCollection.AddTransient<IAutenticacionService, AutenticacionService>();
-            serviceCollection.AddTransient<ISolicitudService, SolicitudService>();
+            serviceCollection.AddTransient<ISolicitaDescargaRecibidosService, SolicitaDescargaRecibidosService>();
             serviceCollection.AddTransient<IVerificacionService, VerificacionService>();
             serviceCollection.AddTransient<IDescargaService, DescargaService>();
             return serviceCollection;

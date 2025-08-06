@@ -8,15 +8,15 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Interfaces
     /// <summary>
     ///     Servicio para mandar peticiones de solicitud al web service de descarga masiva de CFDIs del SAT
     /// </summary>
-    public interface ISolicitudService
+    public interface ISolicitaDescargaRecibidosService
     {
         /// <summary>
         ///     Genera el contenido para la peticion SOAP enviada al web service
         /// </summary>
-        /// <param name="solicitudRequest">Peticion</param>
+        /// <param name="solicitaDescargaRecibidosRequest">Peticion de descarga de CFDI recibidos.</param>
         /// <param name="certificate">Certificado del SAT (.pfx)</param>
         /// <returns>El contenido para la peticion SOAP</returns>
-        string GenerateSoapRequestEnvelopeXmlContent(SolicitudRequest solicitudRequest, X509Certificate2 certificate);
+        string GenerateSoapRequestEnvelopeXmlContent(SolicitaDescargaRecibidosRequest solicitaDescargaRecibidosRequest, X509Certificate2 certificate);
 
         /// <summary>
         ///     Envia la peticion al web service de descarga masiva de CFDIs del SAT.
@@ -32,11 +32,11 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Interfaces
         /// <summary>
         ///     Envia la peticion al web service de descarga masiva de CFDIs del SAT.
         /// </summary>
-        /// <param name="solicitudRequest">Peicion</param>
+        /// <param name="solicitaDescargaRecibidosRequest">Peticion de descarga de comprobantes recibidos</param>
         /// <param name="certificate">Certificado SAT (.pfx)</param>
         /// <param name="cancellationToken">Token de cancelacion</param>
         /// <returns>El resultado de la peticion.</returns>
-        Task<SolicitudResult> SendSoapRequestAsync(SolicitudRequest solicitudRequest,
+        Task<SolicitaDescargaRecibidosResult> SendSoapRequestAsync(SolicitaDescargaRecibidosRequest solicitaDescargaRecibidosRequest,
                                                    X509Certificate2 certificate,
                                                    CancellationToken cancellationToken);
 
@@ -45,6 +45,6 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Interfaces
         /// </summary>
         /// <param name="soapRequestResult">Resultado SOAP</param>
         /// <returns>Resultado de la peticion</returns>
-        SolicitudResult GetSoapResponseResult(SoapRequestResult soapRequestResult);
+        SolicitaDescargaRecibidosResult GetSoapResponseResult(SoapRequestResult soapRequestResult);
     }
 }

@@ -6,9 +6,9 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Models
     /// <summary>
     ///     Resultado de la peticion de solicitud.
     /// </summary>
-    public sealed class SolicitudResult
+    public sealed class SolicitaDescargaRecibidosResult
     {
-        private SolicitudResult(string requestId,
+        private SolicitaDescargaRecibidosResult(string requestId,
                                 string requestStatusCode,
                                 string requestStatusMessage,
                                 HttpStatusCode httpStatusCode,
@@ -47,13 +47,13 @@ namespace ARSoftware.Cfdi.DescargaMasiva.Models
         /// </summary>
         public string ResponseContent { get; }
 
-        public static SolicitudResult CreateInstance(string requestId,
+        public static SolicitaDescargaRecibidosResult CreateInstance(string requestId,
                                                      string requestStatusCode,
                                                      string requestStatusMessage,
                                                      HttpStatusCode httpStatusCode,
                                                      string responseContent)
         {
-            return new SolicitudResult(requestId, requestStatusCode, requestStatusMessage, httpStatusCode, responseContent);
+            return new SolicitaDescargaRecibidosResult(requestId, requestStatusCode, requestStatusMessage, httpStatusCode, responseContent);
         }
     }
 }
